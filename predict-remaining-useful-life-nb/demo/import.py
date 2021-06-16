@@ -24,44 +24,69 @@ import datetime
 
 ddl="""
 create table t1(
-id string,
-vendor_id int,
-pickup_datetime timestamp,
-dropoff_datetime timestamp,
-passenger_count int,
-pickup_longitude double,
-pickup_latitude double,
-dropoff_longitude double,
-dropoff_latitude double,
-store_and_fwd_flag string,
-trip_duration int,
-index(key=vendor_id, ts=pickup_datetime),
-index(key=passenger_count, ts=pickup_datetime)
+engine_no int,
+time_in_cycles int,
+operational_setting_1 double,
+operational_setting_2 double,
+operational_setting_3 double,
+sensor_measurement_1 double,
+sensor_measurement_2 double,
+sensor_measurement_3 double,
+sensor_measurement_4 double,
+sensor_measurement_5 double,
+sensor_measurement_6 double,
+sensor_measurement_7 double,
+sensor_measurement_8 double,
+sensor_measurement_9 double,
+sensor_measurement_10 double,
+sensor_measurement_11 double,
+sensor_measurement_12 double,
+sensor_measurement_13 double,
+sensor_measurement_14 double,
+sensor_measurement_15 double,
+sensor_measurement_16 double,
+sensor_measurement_17 double,
+sensor_measurement_18 double,
+sensor_measurement_19 double,
+sensor_measurement_20 double,
+sensor_measurement_21 double,
+record_index int,
+record_time timestamp,
+index(key=engine_no, ts=record_time),
+index(key=time_in_cycles, ts=record_time)
 );
 """
 engine = db.create_engine('fedb:///db_test?zk=127.0.0.1:2181&zkPath=/fedb')
 connection = engine.connect()
 try:
-    connection.execute("create database db_test;");
+    connection.execute("create database db_test;");   
 except Exception as e:
     print(e)
+try:
+    connection.execute("drop table t1;");
+except Exception as e:
+    print(e)
+
 try:
     connection.execute(ddl);
 except Exception as e:
     print(e)
 
-def insert_row(line):
-    row = line.split(',')
-    row[2] = '%dl'%int(datetime.datetime.strptime(row[2], '%Y-%m-%d %H:%M:%S').timestamp() * 1000)
-    row[3] = '%dl'%int(datetime.datetime.strptime(row[3], '%Y-%m-%d %H:%M:%S').timestamp() * 1000)
-    insert = "insert into t1 values('%s', %s, %s, %s, %s, %s, %s, %s, %s, '%s', %s);"% tuple(row)
+def insert_row(row):
+#     print(int(row[-1].timestamp())*1000, int(datetime.datetime.strptime(row[-1].strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S').timestamp() * 1000))
+    row[-1] = int(row[-1].timestamp())*1000
+    insert = "insert into t1 values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"% tuple(row)
     connection.execute(insert)
 
-with open('data/taxi_tour_table_train_simple.csv', 'r') as fd:
-    idx = 0
-    for line in fd:
-        if idx == 0:
-            idx = idx + 1
-            continue
-        insert_row(line.replace('\n', ''))
-        idx = idx + 1
+import utils
+data = utils.load_data('data/test_FD004.txt')
+
+for idx, row in data.iterrows():
+    insert_row(row)
+
+result = connection.execute("select * from t1 limit 5;");
+print("select t1 head:")
+for r in result:
+    print(r)
+        
+# TODO count(*) check the rows num
