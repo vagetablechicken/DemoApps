@@ -23,7 +23,7 @@ import sys
 import datetime
 
 ddl="""
-create table t1(
+create table rul_table(
 engine_no int,
 time_in_cycles int,
 operational_setting_1 double,
@@ -63,7 +63,7 @@ try:
 except Exception as e:
     print(e)
 try:
-    connection.execute("drop table t1;");
+    connection.execute("drop table rul_table;");
 except Exception as e:
     print(e)
 
@@ -75,18 +75,18 @@ except Exception as e:
 def insert_row(row):
 #     print(int(row[-1].timestamp())*1000, int(datetime.datetime.strptime(row[-1].strftime('%Y-%m-%d %H:%M:%S'), '%Y-%m-%d %H:%M:%S').timestamp() * 1000))
     row[-1] = int(row[-1].timestamp())*1000
-    insert = "insert into t1 values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"% tuple(row)
+    insert = "insert into rul_table values(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);"% tuple(row)
     connection.execute(insert)
 
 import utils
 data = utils.load_data('data/test_FD004.txt')
 
 for idx, row in data.iterrows():
+    if idx > 100:
+        break
     insert_row(row)
 
-result = connection.execute("select * from t1 limit 5;");
-print("select t1 head:")
+result = connection.execute("select * from rul_table limit 5;");
+print("peek rul_table:")
 for r in result:
     print(r)
-        
-# TODO count(*) check the rows num

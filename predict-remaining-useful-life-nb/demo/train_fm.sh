@@ -16,4 +16,4 @@ export JAVA_HOME=/home/jovyan/work/jdk1.8.0_141
 export SPARK_HOME=/home/jovyan/work/spark-3.0.0-bin-sparkfe/
 export PATH=$JAVA_HOME/bin:$PATH
 export PATH=$SPARK_HOME/bin:$PATH
-python3 train_sql.py
+python3 gene_train_by_spark.py

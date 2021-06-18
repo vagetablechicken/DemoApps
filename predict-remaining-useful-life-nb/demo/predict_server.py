@@ -22,45 +22,122 @@ import numpy as np
 import tornado.web
 import tornado.ioloop
 import json
-import lightgbm as lgb
 import sqlalchemy as db
 from sqlalchemy_fedb.fedbapi import Type as feType
 
-bst = lgb.Booster(model_file='/tmp/model.txt')
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_absolute_error
+import pandas as pd
+import utils
 
-print("load model.txt")
+fm = pd.read_csv('train_fm.csv', index_col='engine_no')
+X = fm.copy().fillna(0)
+y = X.pop('remaining_useful_life')
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=17)
+
+# skip baselines
+
+reg = RandomForestRegressor(n_estimators=100)
+reg.fit(X_train, y_train)
+
+preds = reg.predict(X_test)
+scores = mean_absolute_error(preds, y_test)
+print('[Train] Mean Abs Error: {:.2f}'.format(scores))
+
 
 engine = db.create_engine('fedb:///db_test?zk=127.0.0.1:2181&zkPath=/fedb')
 connection = engine.connect()
-sql = """select trip_duration, passenger_count,
-sum(pickup_latitude) over w as vendor_sum_pl,
-max(pickup_latitude) over w as vendor_max_pl,
-min(pickup_latitude) over w as vendor_min_pl,
-avg(pickup_latitude) over w as vendor_avg_pl,
-sum(pickup_latitude) over w2 as pc_sum_pl,
-max(pickup_latitude) over w2 as pc_max_pl,
-min(pickup_latitude) over w2 as pc_min_pl,
-avg(pickup_latitude) over w2 as pc_avg_pl ,
-count(vendor_id) over w2 as pc_cnt,
-count(vendor_id) over w as vendor_cnt
-from t1
-window w as (partition by vendor_id order by pickup_datetime ROWS_RANGE BETWEEN 1d PRECEDING AND CURRENT ROW),
-w2 as (partition by passenger_count order by pickup_datetime ROWS_RANGE BETWEEN 1d PRECEDING AND CURRENT ROW);"""
+
+sql = """
+select
+engine_no,
+max(operational_setting_1) over w1,
+max(operational_setting_2) over w1,
+max(operational_setting_3) over w1,
+max(sensor_measurement_1) over w1,
+max(sensor_measurement_10) over w1,
+max(sensor_measurement_11) over w1,
+max(sensor_measurement_12) over w1,
+max(sensor_measurement_13) over w1,
+max(sensor_measurement_14) over w1,
+max(sensor_measurement_15) over w1,
+max(sensor_measurement_16) over w1,
+max(sensor_measurement_17) over w1,
+max(sensor_measurement_18) over w1,
+max(sensor_measurement_19) over w1,
+max(sensor_measurement_2) over w1,
+max(sensor_measurement_20) over w1,
+max(sensor_measurement_21) over w1,
+max(sensor_measurement_3) over w1,
+max(sensor_measurement_4) over w1,
+max(sensor_measurement_5) over w1,
+max(sensor_measurement_6) over w1,
+max(sensor_measurement_7) over w1,
+max(sensor_measurement_8) over w1,
+max(sensor_measurement_9) over w1,
+max(operational_setting_1) over w2,
+max(operational_setting_2) over w2,
+max(operational_setting_3) over w2,
+max(sensor_measurement_1) over w2,
+max(sensor_measurement_10) over w2,
+max(sensor_measurement_11) over w2,
+max(sensor_measurement_12) over w2,
+max(sensor_measurement_13) over w2,
+max(sensor_measurement_14) over w2,
+max(sensor_measurement_15) over w2,
+max(sensor_measurement_16) over w2,
+max(sensor_measurement_17) over w2,
+max(sensor_measurement_18) over w2,
+max(sensor_measurement_19) over w2,
+max(sensor_measurement_2) over w2,
+max(sensor_measurement_20) over w2,
+max(sensor_measurement_21) over w2,
+max(sensor_measurement_3) over w2,
+max(sensor_measurement_4) over w2,
+max(sensor_measurement_5) over w2,
+max(sensor_measurement_6) over w2,
+max(sensor_measurement_7) over w2,
+max(sensor_measurement_8) over w2,
+max(sensor_measurement_9) over w2
+from {}
+window w1 as (partition by engine_no order by record_time rows_range between unbounded preceding and current row),
+w2 as (partition by time_in_cycles order by record_time rows_range between unbounded preceding and current row)
+;
+""".format('rul_table')
 
 TypeDict = {feType.Bool:"bool", feType.Int16:"smallint", feType.Int32:"int", feType.Int64:"bigint", feType.Float:"float", feType.Double:"double", feType.String:"string", feType.Date:"date", feType.Timestamp:"timestamp"}
 
 table_schema = [
-	("id", "string"),
-	("vendor_id", "int"),
-	("pickup_datetime", "timestamp"),
-	("dropoff_datetime", "timestamp"),
-	("passenger_count", "int"),
-	("pickup_longitude", "double"),
-	("pickup_latitude", "double"),
-	("dropoff_longitude", "double"),
-	("dropoff_latitude", "double"),
-	("store_and_fwd_flag", "string"),
-	("trip_duration", "int"),
+    ("engine_no", "int"),
+    ("time_in_cycles", "int"),
+    ("operational_setting_1", "double"),
+    ("operational_setting_2", "double"),
+    ("operational_setting_3", "double"),
+    ("sensor_measurement_1", "double"),
+    ("sensor_measurement_2", "double"),
+    ("sensor_measurement_3", "double"),
+    ("sensor_measurement_4", "double"),
+    ("sensor_measurement_5", "double"),
+    ("sensor_measurement_6", "double"),
+    ("sensor_measurement_7", "double"),
+    ("sensor_measurement_8", "double"),
+    ("sensor_measurement_9", "double"),
+    ("sensor_measurement_10", "double"),
+    ("sensor_measurement_11", "double"),
+    ("sensor_measurement_12", "double"),
+    ("sensor_measurement_13", "double"),
+    ("sensor_measurement_14", "double"),
+    ("sensor_measurement_15", "double"),
+    ("sensor_measurement_16", "double"),
+    ("sensor_measurement_17", "double"),
+    ("sensor_measurement_18", "double"),
+    ("sensor_measurement_19", "double"),
+    ("sensor_measurement_20", "double"),
+    ("sensor_measurement_21", "double"),
+    ("record_index", "int"),
+    ("record_time", "timestamp"),
 ]
 
 def get_schema():
@@ -71,11 +148,6 @@ def get_schema():
 
 dict_schema = get_schema()
 json_schema = json.dumps(dict_schema)
-
-def build_feature(rs):
-    var_Y = [rs[0]]
-    var_X = [rs[1:12]]
-    return np.array(var_X)
 
 class SchemaHandler(tornado.web.RequestHandler):
     def get(self):
@@ -92,14 +164,21 @@ class PredictHandler(tornado.web.RequestHandler):
                 data[i[0]] = row.get(i[0], 0)
             else:
                 data[i[0]] = None
+
         rs = connection.execute(sql, data)
+        ins = pd.DataFrame()
         for r in rs:
-            ins = build_feature(r)
-            self.write("----------------ins---------------\n")
-            self.write(str(ins) + "\n")
-            duration = bst.predict(ins)
-            self.write("---------------predict trip_duration -------------\n")
-            self.write("%s s"%str(duration[0]))
+            ins = ins.append([np.array(r).tolist()])
+        
+        # X['0'] is engine_no
+        ins = ins.drop(0, axis=1)
+        print(ins)
+        self.write("----------------ins---------------\n")
+        self.write(ins.to_string() + "\n")
+        rul = reg.predict(ins)
+        self.write("---------------predict rul -------------\n")
+        print(rul)
+        self.write(str(rul))
 
 class MainHandler(tornado.web.RequestHandler):
     def get(self):
@@ -114,6 +193,6 @@ def make_app():
 
 if __name__ == "__main__":
     app = make_app()
-    app.listen(8887)
-    print("predict server started on port 8887")
+    app.listen(9887)
+    print("predict server started on port 9887")
     tornado.ioloop.IOLoop.current().start()

@@ -21,18 +21,37 @@ import random
 import time
 import hashlib
 
-url = "http://127.0.0.1:8887/predict"
-req ={"id":"id0376262",
-	"vendor_id":1,
-	"pickup_datetime":1467302350000,
-	"dropoff_datetime":1467304896000,
-	"passenger_count":2,
-	"pickup_longitude":-73.873093,
-	"pickup_latitude":40.774097,
-	"dropoff_longitude":-73.926704,
-	"dropoff_latitude":40.856739,
-	"store_and_fwd_flag":"N",
-	"trip_duration":1}
+url = "http://127.0.0.1:9887/predict"
+req ={
+"engine_no":1,
+"time_in_cycles":50,
+"operational_setting_1" : 35.0033,
+"operational_setting_2" : 0.84,
+"operational_setting_3" : 100.0,
+"sensor_measurement_1" : 449.44,
+"sensor_measurement_2" : 0,
+"sensor_measurement_3" : 0,
+"sensor_measurement_4" : 0,
+"sensor_measurement_5" : 0,
+"sensor_measurement_6" : 0,
+"sensor_measurement_7" : 0,
+"sensor_measurement_8" : 0,
+"sensor_measurement_9" : 0,
+"sensor_measurement_10" : 0,
+"sensor_measurement_11" : 0,
+"sensor_measurement_12" : 0,
+"sensor_measurement_13" : 0,
+"sensor_measurement_14" : 0,
+"sensor_measurement_15" : 0,
+"sensor_measurement_16" : 0,
+"sensor_measurement_17" : 0,
+"sensor_measurement_18" : 0,
+"sensor_measurement_19" : 0,
+"sensor_measurement_20" : 0,
+"sensor_measurement_21" : 0,
+"record_index": 1,
+"record_time": 976744800000,
+}
 r = requests.post(url, json=req)
 print(r.text)
 print("Congraduation! You have finished the task.")
