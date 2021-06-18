@@ -33,3 +33,6 @@ cd /home/jovyan/work/fedb-2.2.0 && ./bin/start_ns.sh start
 sleep 1
 cd /home/jovyan/work/fedb-2.2.0 && ./bin/fedb --interactive=false --zk_cluster=127.0.0.1:2181 --zk_root_path=/fedb --role=sql_client --cmd="show databases;"
 
+echo "pip install deps"
+pip install -r demo/requirements.txt
+
